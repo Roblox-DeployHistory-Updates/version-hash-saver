@@ -34,10 +34,27 @@ jobs:
 
       - name: Fetch latest versions
         run: |
-          curl -s https://clientsettings.roblox.com/v2/client-version/WindowsPlayer > WindowsPlayer.json
-          curl -s https://clientsettings.roblox.com/v2/client-version/WindowsStudio64 > WindowsStudio64.json
-          curl -s https://clientsettings.roblox.com/v2/client-version/MacPlayer > MacPlayer.json
-          curl -s https://clientsettings.roblox.com/v2/client-version/MacStudio > MacStudio.json
+          fetch_and_validate () {
+            endpoint=$1
+            output=$2
+
+            response=$(curl -s "$endpoint")
+
+            version=$(echo "$response" | jq -r '.version // empty')
+
+            if [ -z "$version" ] || [ "$version" = "null" ]; then
+              echo "Failed fetching valid version from $endpoint"
+              echo "$response"
+              exit 1
+            fi
+
+            echo "$response" > "$output"
+          }
+
+          fetch_and_validate "https://clientsettings.roblox.com/v2/client-version/WindowsPlayer" "WindowsPlayer.json"
+          fetch_and_validate "https://clientsettings.roblox.com/v2/client-version/WindowsStudio64" "WindowsStudio64.json"
+          fetch_and_validate "https://clientsettings.roblox.com/v2/client-version/MacPlayer" "MacPlayer.json"
+          fetch_and_validate "https://clientsettings.roblox.com/v2/client-version/MacStudio" "MacStudio.json"
 
       - name: Detect changes + build message
         id: msg
